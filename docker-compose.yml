@@ -1,0 +1,8 @@
+version: "3"
+services:
+  speed_test_api:
+    network_mode: bridge
+    container_name: speed-test-api
+    image: jccabili/speed-test
+    ports:
+      - "3000:3000"

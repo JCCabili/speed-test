@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>Internet Speed Tester</h1>
+<p>Open console for result</p>
+
+<script>
+const apiUrl = "http://localhost:3000"
+const ACTION = {
+  PING: 'PING',
+  UPLOAD: 'UPLOAD',
+  DOWNLOAD: "DOWNLOAD"
+}
+
+function getAvg(grades) {
+  const total = grades.reduce((acc, c) => Number(acc) + Number(c), 0);
+  return total / grades.length;
+}
+
+async function pingTest(pingLoopCount) {
+  return new Promise((resolve, reject) => {
+    let pingList = [];
+    const pingRequest = () => {
+      var start = null;
+      var end = null;
+      var xhttpDownload = new XMLHttpRequest();
+      xhttpDownload.onloadstart = ()=>{
+        start = performance.now();
+      }
+      xhttpDownload.onload = () => {
+        end = performance.now();
+        let duration = (end - start);
+        const result = {type: ACTION.PING, start:start, end: end , durationMs: duration}
+        pingList.push(result);
+        if(pingList.length === pingLoopCount){
+          const durationList = pingList.map(a=> a.durationMs);
+          const pingAverag = Math.round(getAvg(durationList));
+          resolve(pingAverag);
+        }
+      }
+      xhttpDownload.onerror = (err) =>{
+        reject(err)
+      }
+      xhttpDownload.open("GET", apiUrl + "/status" + '?v=' + Date.now() + "&rand=" + Math.random(),true);
+      xhttpDownload.send();
+    }
+
+    for(let i = 0; i< pingLoopCount ; i++){
+      pingRequest();
+    }
+  })
+}
+
+async function downloadTest() {
+  return new Promise((resolve, reject) => {
+
+
+    // let downloadList = [];
+    let hitList = [];
+    let tryCount = 0;
+    let fileSize = 1024;
+
+    let hitLimitListCount = 5; // list of retry if hit 1000 ms this handle.
+    let tryCountLimit = 10; // number of try if the request does not hit 1000 ms
+    let durationTestLimitMs = 500;
+
+    const downloadRequest = () => {
+      let start = null;
+      let end = null;
+      
+
+      let xhttpDownload = new XMLHttpRequest();
+      xhttpDownload.onloadstart = ()=>{
+        start = performance.now();
+      }
+      xhttpDownload.onload = () => {
+        end = performance.now();
+        let duration = (end - start);
+        const result = {type: ACTION.DOWNLOAD,fileSizeBytes:fileSize, start:start, end: end , durationMs: duration}
+        
+        tryCount += 1;
+        if(tryCount === tryCountLimit){
+          fileSize *= 5;
+          tryCount = 0;
+        }
+
+
+        if(duration > durationTestLimitMs){
+          hitList.push(result);
+        } else if (hitList.length > 0 && duration < durationTestLimitMs) {
+          // reset the testing due to intermitent connection.
+          fileSize /= 5;
+          tryCount = 0;
+          hitList = [];
+        }
+        
+        if(hitList.length === hitLimitListCount){
+          // Get the average value of filesize in megabits and duration in seconds.
+          const averageFileSizeMegabits = getAvg(hitList.map(a=>a.fileSizeBytes)) / 125000;
+          const averageDurationSeconds = getAvg(hitList.map(a=>a.durationMs)) / 1000;
+          // compute the internet speed = size/time
+          const speedMegabits = Math.round(averageFileSizeMegabits / averageDurationSeconds);
+          const speedMegabytes = speedMegabits/ 8;
+
+          resolve({speedMegabits:speedMegabits, speedMegabytes: speedMegabytes });
+        } else {
+          downloadRequest();
+        }
+      }
+      xhttpDownload.onerror = (err) =>{
+        reject(err)
+      }
+      xhttpDownload.open("GET", apiUrl + "/download" + "?fileSize=" + fileSize + '&v=' + Date.now() + "&rand=" + Math.random(),true);
+      xhttpDownload.send();
+    }
+    downloadRequest();
+  })
+}
+async function uploadTest() {
+  return new Promise((resolve, reject) => {
+    // let downloadList = [];
+    let hitList = [];
+    let tryCount = 0;
+    let fileSize = 1024;
+
+    let hitLimitListCount = 5; // list of retry if hit durationTestLimitMs this handle.
+    let tryCountLimit = 10; // number of try if the request does not hit durationTestLimitMs
+    let durationTestLimitMs = 500; // 500ms
+
+    const uploadRequest = () => {
+      let start = null;
+      let end = null;
+      // generate
+      let upload = new Blob([new ArrayBuffer(fileSize)], {type: 'application/octet-stream'});
+
+      var formData = new FormData();
+      formData.append("test_file", upload);
+
+      let xhttpUpload = new XMLHttpRequest();
+      xhttpUpload.onloadstart = ()=>{
+        start = performance.now();
+      }
+      xhttpUpload.onload = () => {
+        end = performance.now();
+        let duration = (end - start);
+        const result = {type: ACTION.UPLOAD,fileSizeBytes:fileSize, start:start, end: end , durationMs: duration}
+        tryCount += 1;
+        if(tryCount === tryCountLimit){
+          fileSize *= 5;
+          tryCount = 0;
+        }
+
+        if(duration > durationTestLimitMs){
+          hitList.push(result);
+        } else if (hitList.length > 0 && duration < durationTestLimitMs) {
+          // reset the testing due to intermitent connection.
+          tryCount = 0;
+          hitList = [];
+        }
+        
+        if(hitList.length === hitLimitListCount){
+          // Get the average value of filesize in megabits and duration in seconds.
+          const averageFileSizeMegabits = getAvg(hitList.map(a=>a.fileSizeBytes)) / 125000;
+          const averageDurationSeconds = getAvg(hitList.map(a=>a.durationMs)) / 1000;
+          // compute the internet speed = size/time
+          const speedMegabits = Math.round(averageFileSizeMegabits / averageDurationSeconds);
+          const speedMegabytes = speedMegabits/ 8;
+         
+          resolve({speedMegabits:speedMegabits, speedMegabytes: speedMegabytes });
+        } else {
+          uploadRequest();
+        }
+      }
+      xhttpUpload.onerror = (err) =>{
+        reject(err)
+      }
+      xhttpUpload.open("POST", apiUrl + "/upload" + "?v=" + Date.now() + "&rand=" + Math.random(),true);
+      xhttpUpload.send(formData);
+    }
+    uploadRequest();
+  })
+}
+async function speedTest() {
+  let start = performance.now();
+  console.log(`INTERNET SPEED TESTER`)
+  console.log(`PING TEST STARTING...`)
+  pingTest(5)
+  .then(result=>{
+    console.log(`PING TEST COMPLETED RESULT: ${result}ms`)
+    console.log(`DOWNLOAD TEST STARTING...`)
+    downloadTest()
+    .then((downloadResult)=>{
+      console.log(`DOWNLOAD TEST COMPLETED RESULT ${downloadResult.speedMegabits}Mbps`)
+      console.log(`UPLOAD TEST STARTING...`)
+      uploadTest().then(uploadResult => {
+        console.log(`UPLOAD TEST COMPLETED RESULT ${uploadResult.speedMegabits}Mbps`)
+          end = performance.now();
+          let duration = Math.round((end - start)) / 1000;
+          console.log(`COMPLETE TESTING DURATION ${duration}sec`)
+        })
+        .catch(e=>{
+          console.error('UPLOAD ERROR:', e)
+        })
+    }).catch(e=>{
+    console.error('DOWNLOAD ERROR:', e)
+    })
+  }).catch(e=>{
+    console.error('PING ERROR:', e)
+  })
+}
+speedTest();
+</script>
+
+</body>
+</html>

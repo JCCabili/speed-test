@@ -1,0 +1,8 @@
+node_modules
+package-lock.json
+.dockerignore
+Dockerfile
+docker-compose.yml
+static
+release
+documents

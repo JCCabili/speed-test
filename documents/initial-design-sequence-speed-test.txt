@@ -1,0 +1,42 @@
+title VostroNet (Internet Speed Tester)
+
+participant client
+participant api
+client->client:Check Ping
+client->api:Request API Status
+client<-api:Return 200
+client->client:Start Download Testing
+note right of client:Loop requires getting an accurate \ndata to compute when the client \nreach 1-sec duration for a request
+loop requestDuration > 1000ms & hitList.length === 5
+client->client:start timestamp
+client->api:GET /download?v=[random numeric data]\nrequest \n- fileSize 1024 bytes
+api->api:create a payload with requested fileSize
+client<-api:Return 200 & payload
+client->client:end timestamp
+client->client:Set \n- requestDuration\n- endTimeStamp
+alt requestDuration > 1000
+client->client:Set\nappend hitList record
+end 
+alt requestDuration < 1000
+client->client:Set\nfileSize *= 1024
+end 
+end
+client->client:Compute speed with the hitList Record
+client->client:Start Download Testing
+loop requestDuration > 1000ms & hitList.length === 5
+client->client:create a binary file with \n- fileSize 1024 bytes
+client->client:start timestamp
+client->api:POST /upload\nrequest upload \nbinaryFile
+client<-api:Return 200
+client->client:end timestamp
+client->client:Set \n- requestDuration\n- endTimeStamp
+alt requestDuration > 1000
+client->client:Set\nappend hitList record
+end 
+alt requestDuration < 1000
+client->client:Set\nfileSize *= 1024
+end 
+end
+client->api:POST /log
+api->api:save test result as json file
+client<-api:return 200
