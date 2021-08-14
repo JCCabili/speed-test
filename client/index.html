@@ -24,11 +24,11 @@ async function pingTest(pingLoopCount) {
     const pingRequest = () => {
       var start = null;
       var end = null;
-      var xhttpDownload = new XMLHttpRequest();
-      xhttpDownload.onloadstart = ()=>{
+      var xhttpPing = new XMLHttpRequest();
+      xhttpPing.onloadstart = ()=>{
         start = performance.now();
       }
-      xhttpDownload.onload = () => {
+      xhttpPing.onload = () => {
         end = performance.now();
         let duration = (end - start);
         const result = {type: ACTION.PING, start:start, end: end , durationMs: duration}
@@ -39,11 +39,11 @@ async function pingTest(pingLoopCount) {
           resolve(pingAverag);
         }
       }
-      xhttpDownload.onerror = (err) =>{
+      xhttpPing.onerror = (err) =>{
         reject(err)
       }
-      xhttpDownload.open("GET", apiUrl + "/status" + '?v=' + Date.now() + "&rand=" + Math.random(),true);
-      xhttpDownload.send();
+      xhttpPing.open("GET", apiUrl + "/status" + '?v=' + Date.now() + "&rand=" + Math.random(),true);
+      xhttpPing.send();
     }
 
     for(let i = 0; i< pingLoopCount ; i++){
@@ -181,6 +181,15 @@ async function uploadTest() {
     uploadRequest();
   })
 }
+async function sendResultLog(data) {
+  return new Promise((resolve, reject) => {
+    var xhttpLog = new XMLHttpRequest();
+      xhttpLog.open("POST", apiUrl + "/log",true);
+      xhttpLog.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      xhttpLog.send(JSON.stringify(data));    
+  })
+}
+
 async function speedTest() {
   let start = performance.now();
   console.log(`INTERNET SPEED TESTER`)
@@ -197,6 +206,9 @@ async function speedTest() {
         console.log(`UPLOAD TEST COMPLETED RESULT ${uploadResult.speedMegabits}Mbps`)
           end = performance.now();
           let duration = Math.round((end - start)) / 1000;
+          // send to backend result
+          const testResult = {pingMs: result,downloadMbps:downloadResult.speedMegabits ,uploadMbps:uploadResult.speedMegabits}
+          sendResultLog(testResult);
           console.log(`COMPLETE TESTING DURATION ${duration}sec`)
         })
         .catch(e=>{
@@ -209,6 +221,10 @@ async function speedTest() {
     console.error('PING ERROR:', e)
   })
 }
+
+
+
+
 speedTest();
 </script>
 
