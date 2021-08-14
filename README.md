@@ -21,7 +21,7 @@ npm run dev
 
 ## 2.2 Build & Run the release version:
 ```
-npm build
+npm run build
 npm start
 ```
 
