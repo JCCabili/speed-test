@@ -1,5 +1,3 @@
-This applciation compose of
-
 Internet Speed Tester - Jhon Christopher Cabili August 14,2021
 Activity Reference: ./documents
 
