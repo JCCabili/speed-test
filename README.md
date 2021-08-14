@@ -1,7 +1,7 @@
-Internet Speed Tester - Jhon Christopher Cabili August 14,2021
+# Internet Speed Tester - Jhon Christopher Cabili August 14,2021
 Activity Reference: ./documents
 
-Back-end API Nodejs
+## Back-end API Nodejs
 framework/lib use: 
 - body-parse
 - cors
@@ -10,24 +10,23 @@ framework/lib use:
 - webpack
 - winston
 
-Install packages:
+## 1. Install packages:
 ```
 npm install
 ```
-Command run on development: 
+## 2.1 Run on development environment: 
 ```
 npm run dev
 ```
 
-Build & Run the realase
+## 2.2 Build & Run the release version:
 ```
 npm build
 npm start
 ```
 
 
-Front-End 
+## Front-End 
 - Got to ./client/index.html
-
-Docker Issue
-- Containerized the app affects the download throughput.
+## Docker Issue
+- Containerizing the api affects the download throughput.
